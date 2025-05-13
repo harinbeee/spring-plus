@@ -1,5 +1,7 @@
 package org.example.expert.domain.todo.service;
 
+import java.time.LocalDateTime;
+
 import lombok.RequiredArgsConstructor;
 import org.example.expert.client.WeatherClient;
 import org.example.expert.domain.common.dto.AuthUser;
@@ -47,10 +49,22 @@ public class TodoService {
         );
     }
 
-    public Page<TodoResponse> getTodos(int page, int size) {
+    public Page<TodoResponse> getTodos(int page, int size, String weather, LocalDateTime start, LocalDateTime end) {
         Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Todo> todos;
 
-        Page<Todo> todos = todoRepository.findAllByOrderByModifiedAtDesc(pageable);
+        // weather 조건부 검색
+        if (!weather.isEmpty()) {
+            todos = todoRepository.findByWeather(weather, pageable);
+        }
+        // 수정일 기간 조건부 검색
+        else if (start != null && end != null) {
+            todos = todoRepository.findByModifiedAt(start, end, pageable);
+        }
+        // 조건이 없을때
+        else {
+            todos = todoRepository.findAllByOrderByModifiedAtDesc(pageable);
+        }
 
         return todos.map(todo -> new TodoResponse(
                 todo.getId(),
